@@ -1,0 +1,68 @@
+Pass-SSL Password Generator
+Author: Kaido-MSVC
+
+MIT License
+
+Copyright (c) 2026 Kaido-MSVC
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The MIT License above covers the Pass-SSL application code written for this
+project (src, tests, tools, installer scripts and project resources). It does
+not change the licenses of the third-party components listed below.
+
+------------------------------------------------------------------------------
+Third-party components
+------------------------------------------------------------------------------
+
+Pass-SSL includes or dynamically links the following components. Each remains
+under its own license; those terms take precedence for that component. Full
+texts are in the LICENSES folder and details in THIRD_PARTY_NOTICES.md.
+
+1. Qt 6.12.0 (Qt Core, Qt Gui, Qt Widgets, Qt Svg and deployed plugins)
+   Copyright (C) The Qt Company Ltd. and other contributors.
+   License: GNU Lesser General Public License v3 (LGPLv3).
+   Files:   LICENSES/LICENSE.LGPLv3, LICENSES/LICENSE.GPLv3,
+            LICENSES/qt-third-party/
+   Qt is linked dynamically. The Qt DLLs are unmodified and may be replaced
+   with compatible versions built by the user.
+   Source:  https://download.qt.io/official_releases/qt/6.12/6.12.0/submodules/
+
+2. OpenSSL 4.0.3 (libcrypto-4-x64.dll)
+   Copyright (C) The OpenSSL Project Authors and contributors.
+   License: Apache License 2.0.
+   Files:   LICENSES/OpenSSL-Apache-2.0.txt, LICENSES/OpenSSL-authors.txt
+   Source:  https://github.com/openssl/openssl
+
+3. zxcvbn-c (embedded password-strength estimator and dictionaries)
+   Copyright (C) 2015-2017 Tony Evans.
+   License: MIT. Dictionaries derive from Dropbox zxcvbn (MIT).
+   Files:   LICENSES/zxcvbn-c-MIT.txt, LICENSES/zxcvbn-Dropbox-MIT.txt
+   Source:  https://github.com/tsyrogit/zxcvbn-c
+
+4. EFF Long Wordlist
+   Copyright (C) Electronic Frontier Foundation; created by Joseph Bonneau.
+   License: Creative Commons Attribution 4.0 International (CC BY 4.0).
+   Files:   LICENSES/EFF-CC-BY-4.0.txt
+   Pass-SSL is not endorsed by EFF.
+
+5. Microsoft Visual C++ Runtime (app-local DLLs)
+   Copyright (C) Microsoft Corporation.
+   Distributed under the Microsoft Visual Studio redistribution terms.
+   Files:   LICENSES/Microsoft-Redist.txt
