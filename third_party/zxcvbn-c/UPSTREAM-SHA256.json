@@ -1,0 +1,16 @@
+{
+  "dict-generate.cpp": "b95363310e535b665f3d4740d028f002926150edc40dac6072e672e73cfa036f",
+  "LICENSE.txt": "70322a5397c460cff581aea9a58c25be34bb16dd68ce867a9aca6c9d8941cb22",
+  "README.md": "ace235de4fd6d4e7c49e00ff291cecca828b8826dd5aa46d358783e2ac609094",
+  "test-internals.c": "6a0ddb4ddc4c432d5a394065b32f731e78c1debd2b3cc678f4c763fea91e7cdd",
+  "test.c": "2025ec64b0b6bad1a75d63b2a3ec21732888cdfe7821eb7bdb428b2c4d105331",
+  "testcases.txt": "68b81155fe9ed2a90eb0e68c6b7a8cdb99a9d00ea3c072db37fe3185382b50cd",
+  "words-eng_wiki.txt": "bd7315cdb94f94929001b2d6dbcb4d264d19f0e493ab4e9a8fd55bcc7f76bc9c",
+  "words-female.txt": "0e44c411f28dff15a8958d6ffc2a5df2826c9d6525aa81c8ad7bcc49da778e03",
+  "words-male.txt": "0c1453291f02cb67048296040f116f00cd2eaaef01ea83e3399b727ccbb772b4",
+  "words-passwd.txt": "182acfb2b67a5a7b0573366ba20ff540aeed4b633ab7df65e92bd5454d73a1c0",
+  "words-surname.txt": "229519a7947b29c377f3e952e83446f48296e09109a7bccd4f47c2544d04dc58",
+  "words-tv_film.txt": "907621af8b61b6c95d805213a62757a4614aba75872bcd1d7550f696d60f4efc",
+  "zxcvbn.c": "7ed8410e26004d5d276aa9fd7f943e06572941c43f2b61bf472964087c534b66",
+  "zxcvbn.h": "b2fce257ddc88f4c66573b54041906dd05c608cf38b99d8daa8de437014f6add"
+}

@@ -1,0 +1,26 @@
+#include <windows.h>
+#include "pass_version.h"
+IDI_ICON1 ICON "app.ico"
+1 VERSIONINFO
+FILEVERSION PASS_VERSION_MAJOR,PASS_VERSION_MINOR,PASS_VERSION_PATCH,0
+PRODUCTVERSION PASS_VERSION_MAJOR,PASS_VERSION_MINOR,PASS_VERSION_PATCH,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+ BLOCK "StringFileInfo"
+ BEGIN
+  BLOCK "040904B0"
+  BEGIN
+   VALUE "FileDescription", "Pass-SSL Password Generator\0"
+   VALUE "ProductName", "Pass-SSL\0"
+   VALUE "CompanyName", "Kaido-MSVC\0"
+   VALUE "LegalCopyright", PASS_COPYRIGHT_RC
+   VALUE "FileVersion", PASS_VERSION_RC
+   VALUE "ProductVersion", PASS_VERSION_RC
+  END
+ END
+ BLOCK "VarFileInfo"
+ BEGIN
+  VALUE "Translation", 0x0409, 1200
+ END
+END
