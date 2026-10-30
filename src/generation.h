@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Kaido-MSVC
 #pragma once
 #include "password.h"
 #include "passphrase.h"
@@ -19,7 +21,7 @@ size_t batchCapacity(size_t maxLength, int count);
 std::shared_ptr<Generation> startGeneration(const pass::Rules& rules, int count);
 std::shared_ptr<Generation> startGeneration(const pass::PassphraseRules& rules, int count);
 #ifdef PASS_TESTING
-// Compiled only into test targets. Production has no injectable generator API.
+// Compiled only into test targets. Production has no provider selection API.
 using Generator = QString (*)(const pass::Rules&, const std::function<bool()>&);
 using WordGenerator = QString (*)(const pass::PassphraseRules&, const std::function<bool()>&);
 std::shared_ptr<Generation> startGeneration(const pass::Rules& rules, int count, Generator generate);

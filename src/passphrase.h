@@ -1,10 +1,10 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Kaido-MSVC
 #pragma once
-#include "random_algorithm.h"
 #include <QString>
 #include <functional>
 namespace pass {
 struct PassphraseRules {
-    RandomAlgorithm algorithm = RandomAlgorithm::Ctr;
     int words = 6;
     QChar separator = QLatin1Char('-');
 };

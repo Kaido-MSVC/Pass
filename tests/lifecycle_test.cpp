@@ -1,8 +1,5 @@
 #include <windows.h>
-#include <openssl/evp.h>
-#include <openssl/provider.h>
-#include <openssl/core_names.h>
-#include <openssl/err.h>
+#include <bcrypt.h>
 #include <QtTest>
 #include <atomic>
 #include <condition_variable>
@@ -14,13 +11,13 @@ bool release=false;
 bool stallPermanently=false;
 std::atomic_bool entered{false}, zeroOK{true};
 std::atomic_int wipes{0};
-int random(EVP_RAND_CTX*, unsigned char* buffer, size_t size, unsigned int, int, const unsigned char*, size_t) {
+NTSTATUS WINAPI random(BCRYPT_ALG_HANDLE, PUCHAR buffer, ULONG size, ULONG) {
     entered=true;
     if(stallPermanently)Sleep(INFINITE);
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock,[]{return release;});
     std::fill(buffer,buffer+size,0);
-    return 1;
+    return 0;
 }
 PVOID wipe(PVOID buffer,SIZE_T size) {
     auto result=::SecureZeroMemory(buffer,size);
@@ -28,7 +25,7 @@ PVOID wipe(PVOID buffer,SIZE_T size) {
     ++wipes;return result;
 }
 }
-#define EVP_RAND_generate inject::random
+#define BCryptGenRandom inject::random
 #undef SecureZeroMemory
 #define SecureZeroMemory inject::wipe
 #include "../src/secure_random.cpp"
@@ -36,7 +33,7 @@ PVOID wipe(PVOID buffer,SIZE_T size) {
 #include "../src/passphrase.cpp"
 #include "../src/generation.h"
 #include "../src/generation.cpp"
-#undef EVP_RAND_generate
+#undef BCryptGenRandom
 #undef SecureZeroMemory
 class LifecycleTests:public QObject {
  Q_OBJECT
@@ -49,7 +46,7 @@ private slots:
    value.append(QStringLiteral("second"));}
   QCOMPARE(inject::wipes.load(),2);QVERIFY(inject::zeroOK.load());
  }
- void stalledOpenSSLCancellation(){
+ void stalledBCryptCancellation(){
   struct Release {~Release(){ {std::lock_guard<std::mutex> lock(inject::mutex);inject::release=true;}inject::cv.notify_all();while(generationBusy.load())QTest::qWait(1);}} release;
   pass::Rules r;r.upper=r.lower=r.digits=r.symbols=false;r.custom="ab";
   auto job=startGeneration(r,1);QVERIFY(job);QTRY_VERIFY(inject::entered.load());
@@ -58,12 +55,12 @@ private slots:
   {std::lock_guard<std::mutex> lock(inject::mutex);inject::release=true;}inject::cv.notify_all();
   QTRY_VERIFY(job->done.load());QVERIFY(job->secret.empty());QVERIFY(inject::zeroOK.load());
  }
- void processExitWithStalledOpenSSL(){
+ void processExitWithStalledBCrypt(){
   QProcess child;child.start(QCoreApplication::applicationFilePath(),{QStringLiteral("--blocked-exit")});
   QVERIFY(child.waitForStarted(5000));QVERIFY(child.waitForFinished(5000));
   QCOMPARE(child.exitStatus(),QProcess::NormalExit);QCOMPARE(child.exitCode(),0);
  }
- void stalledWordOpenSSLCancellation(){
+ void stalledWordBCryptCancellation(){
   {std::lock_guard<std::mutex> lock(inject::mutex);inject::release=false;}inject::entered=false;inject::zeroOK=true;
   struct Release {~Release(){ {std::lock_guard<std::mutex> lock(inject::mutex);inject::release=true;}inject::cv.notify_all();while(generationBusy.load())QTest::qWait(1);}} release;
   auto job=startGeneration(pass::PassphraseRules{},100);QVERIFY(job);QTRY_VERIFY(inject::entered.load());
@@ -72,7 +69,7 @@ private slots:
   {std::lock_guard<std::mutex> lock(inject::mutex);inject::release=true;}inject::cv.notify_all();
   QTRY_VERIFY(job->done.load());QVERIFY(job->secret.empty());QVERIFY(inject::zeroOK.load());
  }
- void processExitWithStalledWordOpenSSL(){
+ void processExitWithStalledWordBCrypt(){
   QProcess child;child.start(QCoreApplication::applicationFilePath(),{QStringLiteral("--blocked-word-exit")});
   QVERIFY(child.waitForStarted(5000));QVERIFY(child.waitForFinished(5000));
   QCOMPARE(child.exitStatus(),QProcess::NormalExit);QCOMPARE(child.exitCode(),0);

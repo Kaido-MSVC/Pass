@@ -1,22 +1,11 @@
 # Third-party components
 
-Pass-SSL is Copyright (c) 2026 Kaido-MSVC (author) and is released under the
+Pass is Copyright (c) 2026 Kaido-MSVC (author) and is released under the
 MIT License; see LICENSE.txt. The components below keep their own licenses.
-
-## zxcvbn-c (embedded estimator and dictionaries)
-
-Source: https://github.com/tsyrogit/zxcvbn-c
-Pinned commit: 4011582de2ee7885c8f29560f86716829cfdfd44 (2026-10-03).
-MIT license, Copyright (c) 2015-2017 Tony Evans; see LICENSES/zxcvbn-c-MIT.txt.
-Its word dictionaries derive from Dropbox zxcvbn; the original MIT notice is
-included as LICENSES/zxcvbn-Dropbox-MIT.txt. No network lookup occurs at runtime.
-See third_party/zxcvbn-c/PASS-INTEGRATION.md in the source distribution for local
-build adaptations, score mapping, limitations and source hashes.
 
 ## Qt 6.12.0
 
-Pass-SSL dynamically links Qt 6.12.0 (Qt Core, Qt Gui, Qt Widgets, Qt Svg and the
-plugins deployed by windeployqt, plus any module those depend on).
+Pass dynamically links Qt 6.12.0 (Core, Gui, Widgets and deployed plugins (including their Svg/Network dependencies)).
 Qt is Copyright (C) The Qt Company Ltd. and other contributors.
 License: GNU Lesser General Public License version 3 (LGPLv3), which incorporates
 the GNU GPL version 3. Full texts: LICENSES/LICENSE.LGPLv3 and LICENSES/LICENSE.GPLv3.
@@ -25,14 +14,16 @@ Qt source and licensing information:
 https://www.qt.io/licensing/open-source-lgpl-obligations
 https://download.qt.io/official_releases/qt/6.12/6.12.0/submodules/
 
-The Qt DLLs are shipped unmodified, remain separate files and can be replaced with
-compatible versions. Help > About Qt in the application shows Qt's own notice.
+Qt DLLs are shipped unmodified, remain separate and can be replaced with compatible
+versions. Help > About Qt in the application shows Qt's own notice.
 
-## Microsoft Visual C++ Runtime
+## Microsoft Visual C++ Redistributable
 
-Microsoft Visual C++ runtime DLLs are distributed app-local in both the portable
-package and the installer; no system-wide Redistributable is installed.
-Microsoft license terms apply; see LICENSES/Microsoft-Redist.txt.
+Microsoft Visual C++ Redistributable is distributed through its official installer;
+its Microsoft license terms apply. Windows BCrypt is a system component.
+
+Additional deployed Qt plugins may have their own third-party notices; see the
+Qt distribution and source modules for the corresponding component notices.
 
 ## EFF Long Wordlist
 
@@ -46,14 +37,62 @@ Full legal text is included in LICENSES/EFF-CC-BY-4.0.txt.
 The original wordlist is embedded unchanged; runtime parsing removes dice codes
 without changing the words or order. Pass is not endorsed by EFF.
 
-## OpenSSL 4.0.3
 
-Copyright The OpenSSL Project Authors and contributors.
-Pass-SSL dynamically links libcrypto-4-x64.dll (VC-WIN64A, release /MD).
-License: Apache License 2.0. The installed distribution's complete license and
-author list are included as LICENSES/OpenSSL-Apache-2.0.txt and OpenSSL-authors.txt.
-https://www.openssl.org/ and https://github.com/openssl/openssl
+## Offline strength estimator (zxcvbn-c)
 
-The built-in default provider supplies SEED-SRC, CTR-DRBG, HASH-DRBG and HMAC-DRBG.
-No legacy, external or FIPS provider is shipped or required. This application
-does not claim FIPS certification. No libssl DLL is needed by the application.
+Copyright (c) 2015-2017 Tony Evans; dictionaries derive from Dropbox zxcvbn (MIT).
+Vendored zxcvbn-c (MIT), adapted from Pass-SSL v2.2.2; see third_party/zxcvbn-c/PASS-INTEGRATION.md and LICENSES/zxcvbn-*-MIT.txt. No OpenSSL dependency.
+
+## Mesa llvmpipe 11.2.2 (opengl32sw.dll)
+
+The unmodified software OpenGL DLL comes from the installed Qt 6.12.0 Windows
+x64 package `opengl32sw-64-mesa_11_2_2-signed_sha256`. It is a graphics fallback,
+not Pass's random-number core. The DLL matches the installed Qt copy byte for
+byte; its SHA-256 is recorded in LICENSES/Mesa-llvmpipe.txt.
+
+Complete Brian Paul / Mesa MIT, Khronos MIT and yohhoy C11 threads / Boost
+Software License 1.0 notices are included in **LICENSES/Mesa-llvmpipe.txt**.
+They were transcribed from Qt 6.12.0's official attribution, not replaced by
+license names or links. The original wording is retained.
+https://doc.qt.io/qt-6/qt-attribution-llvmpipe.html
+
+Qt's legacy Mesa 11.2.2 build documentation identifies LLVM 3.6. The complete
+legacy University of Illinois/NCSA LLVM license is in LICENSES/LLVM-3.6-LICENSE.txt;
+supplemental LLVM notices from Qt are also preserved separately. This does not
+claim an exact LLVM patch version from a DLL without version metadata.
+https://wiki.qt.io/index.php?title=MesaLlvmpipe&oldid=33647
+https://releases.llvm.org/3.6.0/LICENSE.TXT
+
+## Microsoft D3DCompiler_47.dll
+
+Copyright Microsoft Corporation. This unmodified graphics helper is deployed
+by Qt, file version 6.3.9600.16384, SHA-256
+e994847e01a6f1e4cbdc5a864616ac262f67ee4f14db194984661a8d927ab7f4.
+It is not licensed under Pass's MIT license. Microsoft's Windows SDK REDIST
+list identifies Redist/D3D/x64/d3dcompiler_47.dll as redistributable for desktop
+applications. The full installed SDK license, SDK third-party notices and the
+official REDIST list are included in LICENSES/Microsoft-Windows-SDK-*.
+The included SDK terms are from SDK 10.0.26100.0; this does not assert that the
+older Qt-provided DLL is the same build as the current Windows SDK copy.
+https://learn.microsoft.com/en-us/legal/windows-sdk/redist
+https://learn.microsoft.com/en-us/windows/win32/directx-sdk--august-2009-
+
+## Qt corresponding source and replacement
+
+Qt DLLs and plugins remain unmodified, separate and replaceable. To use a
+compatible user-built Qt, close Pass and replace the Qt DLLs and matching
+plugins together in the extracted application directory; keep their relative
+paths. Rebuild Pass against that Qt if its ABI changes. Reverse engineering
+for debugging modifications to these libraries is permitted. No signature or
+activation check prevents running a compatible replacement.
+
+Corresponding source for the shipped Qt 6.12.0 modules is available from Qt's
+official server (these are third-party source downloads, separate from the
+Pass application source in this repository):
+- https://download.qt.io/official_releases/qt/6.12/6.12.0/submodules/qtbase-everywhere-src-6.12.0.tar.xz
+- https://download.qt.io/official_releases/qt/6.12/6.12.0/submodules/qtsvg-everywhere-src-6.12.0.tar.xz
+- https://download.qt.io/official_releases/qt/6.12/6.12.0/submodules/qtimageformats-everywhere-src-6.12.0.tar.xz
+
+All three are unmodified upstream modules. Pass's source, CMake project,
+resources and build scripts are published under the Plus tag. See README.md
+for the pinned Windows toolchain and LICENSES/INDEX.md for the license files.

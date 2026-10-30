@@ -1,18 +1,22 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Kaido-MSVC
 #include "password.h"
 #include "strength_estimator.h"
+#include <QPoint>
 #include "secure_random.h"
 #include "secret_text.h"
 #include <windows.h>
+#include <bcrypt.h>
 #include <array>
 #include <cmath>
 #include <stdexcept>
-#include <QPoint>
+#include <QSet>
 namespace pass {
 namespace {
 const QString upper = QStringLiteral("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 const QString lower = QStringLiteral("abcdefghijklmnopqrstuvwxyz");
 const QString digits = QStringLiteral("0123456789");
-const QString symbols = QStringLiteral("!@#$%^&*()-_=+[]{};:,.?/");
+const QString symbols = QStringLiteral("!@#$%^&*()-_=+[]{};:,.?/~<>|");
 QString unique(QString text) { QString result; for (QChar c : text) if (!result.contains(c)) result += c; return result; }
 struct Pool { QString alphabet; QVector<QString> groups; QVector<int> minima; };
 Pool pool(const Rules& r) {
@@ -82,7 +86,7 @@ bool matches(const QString& text, const Rules& r) {
 }
 QString generate(const Rules& r, const std::function<bool()>& cancelled) {
     QString error = validate(r); if (!error.isEmpty()) throw std::runtime_error(error.toUtf8().constData());
-    Pool p = pool(r); Random rng(r.algorithm);
+    Pool p = pool(r); Random rng;
     for (int attempt = 0; attempt < 100000; ++attempt) {
         if (cancelled && cancelled()) throw std::runtime_error("已取消產生。");
         // Allocate once and avoid reallocations or shared QString copies of partial secrets.

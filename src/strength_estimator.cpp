@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Kaido-MSVC
 #include "strength_estimator.h"
 #include <windows.h>
 #include <cstdlib>

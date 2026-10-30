@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Kaido-MSVC
 #include "passphrase.h"
 #include "wordlist.h"
 #include "secure_random.h"
@@ -19,7 +21,7 @@ int maxLength(const PassphraseRules& rules) {
 QString generate(const PassphraseRules& rules, const std::function<bool()>& cancelled) {
     // One allocation; CandidateWiper owns it through every exceptional path.
     QString candidate(maxLength(rules), QChar(0));
-    CandidateWiper wipe(candidate); Random rng(rules.algorithm); qsizetype offset = 0;
+    CandidateWiper wipe(candidate); Random rng; qsizetype offset = 0;
     for (int i = 0; i < rules.words; ++i) {
         if (cancelled && cancelled()) throw std::runtime_error("已取消產生。");
         int index = rng.below16(WordCount, cancelled);

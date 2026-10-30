@@ -1,4 +1,4 @@
-# Pass-SSL v2.2.1 integration
+# Pass v2.0 Plus integration (from Pass-SSL v2.2.2)
 
 Upstream: https://github.com/tsyrogit/zxcvbn-c
 Commit: 4011582de2ee7885c8f29560f86716829cfdfd44 (2026-10-03).

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Kaido-MSVC
 #pragma once
 #include <QtCore/QDebug>
 #include <QtCore/QOperatingSystemVersion>
@@ -19,24 +21,24 @@ inline Protection apply(HWND hwnd, SetAffinity setAffinity = &::SetWindowDisplay
     // Only a live, process-owned top-level HWND is passed by Window.
     if (setAffinity(hwnd, excludeFromCapture)) {
         if (exclusionSupported) {
-            qInfo("Pass-SSL capture protection: WDA_EXCLUDEFROMCAPTURE applied.");
+            qInfo("Pass capture protection: WDA_EXCLUDEFROMCAPTURE applied.");
             return Protection::Excluded;
         }
-        qWarning("Pass-SSL capture protection: pre-2004 Windows; WDA_MONITOR semantics only.");
+        qWarning("Pass capture protection: pre-2004 Windows; WDA_MONITOR semantics only.");
         return Protection::MonitorOnly;
     }
     const DWORD error = GetLastError();
-    qWarning().nospace() << "Pass-SSL capture protection: WDA_EXCLUDEFROMCAPTURE failed; Win32 error=" << error;
+    qWarning().nospace() << "Pass capture protection: WDA_EXCLUDEFROMCAPTURE failed; Win32 error=" << error;
     // Compatibility retry only for unsupported flags/APIs, not arbitrary failures.
     if (error == ERROR_INVALID_PARAMETER || error == ERROR_NOT_SUPPORTED || error == ERROR_CALL_NOT_IMPLEMENTED) {
         if (setAffinity(hwnd, WDA_MONITOR)) {
-            qWarning("Pass-SSL capture protection: fallback WDA_MONITOR applied (blank capture only).");
+            qWarning("Pass capture protection: fallback WDA_MONITOR applied (blank capture only).");
             return Protection::MonitorOnly;
         }
         const DWORD fallbackError = GetLastError();
-        qWarning().nospace() << "Pass-SSL capture protection: WDA_MONITOR failed; Win32 error=" << fallbackError;
+        qWarning().nospace() << "Pass capture protection: WDA_MONITOR failed; Win32 error=" << fallbackError;
     }
-    qWarning("Pass-SSL capture protection unavailable; continuing without capture exclusion.");
+    qWarning("Pass capture protection unavailable; continuing without capture exclusion.");
     return Protection::Unprotected;
 }
 }

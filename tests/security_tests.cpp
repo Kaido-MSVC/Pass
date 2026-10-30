@@ -1,10 +1,7 @@
 // Test-only instrumentation. Include the ORIGINAL implementation verbatim.
 // Windows declarations are parsed before macros; no hooks exist in the UI binary.
 #include <windows.h>
-#include <openssl/evp.h>
-#include <openssl/provider.h>
-#include <openssl/core_names.h>
-#include <openssl/err.h>
+#include <bcrypt.h>
 #include <QString>
 #include <QCoreApplication>
 #include <QSet>
@@ -20,16 +17,16 @@
 
 namespace audit {
 struct Watchdog : std::runtime_error { Watchdog():std::runtime_error("test watchdog") {} };
-using Provider = std::function<int(unsigned char*, size_t)>;
+using Provider = std::function<NTSTATUS(PUCHAR, ULONG)>;
 Provider provider;
 int calls=0, wipes=0, argErrors=0;
 std::vector<SIZE_T> wipeSizes;
 int nonzeroCandidateWipes=0;
 bool wipeOK=true;
-int random(EVP_RAND_CTX* ctx, unsigned char* b, size_t n, unsigned int strength, int prediction, const unsigned char* extra, size_t extraSize) {
+NTSTATUS WINAPI random(BCRYPT_ALG_HANDLE h, PUCHAR b, ULONG n, ULONG f) {
     ++calls;
-    if(!ctx || n!=256 || strength!=256 || prediction!=0 || extra || extraSize) ++argErrors;
-    return provider ? provider(b,n) : ::EVP_RAND_generate(ctx,b,n,strength,prediction,extra,extraSize);
+    if(h!=nullptr || n!=256 || f!=BCRYPT_USE_SYSTEM_PREFERRED_RNG) ++argErrors;
+    return provider ? provider(b,n) : ::BCryptGenRandom(h,b,n,f);
 }
 PVOID wipe(PVOID p, SIZE_T n) {
     wipeSizes.push_back(n);
@@ -50,18 +47,18 @@ void throws(const std::function<void()>& fn, const char* text=nullptr) {
     require(caught,"expected exception");
 }
 Provider stream(std::vector<unsigned char> bytes, unsigned char tail=0) {
-    return [bytes=std::move(bytes),tail,pos=size_t(0)](unsigned char* b,size_t n) mutable {
-        for(size_t i=0;i<n;++i) b[i]=pos<bytes.size()?bytes[pos++]:tail;
-        return 1;
+    return [bytes=std::move(bytes),tail,pos=size_t(0)](PUCHAR b,ULONG n) mutable {
+        for(ULONG i=0;i<n;++i) b[i]=pos<bytes.size()?bytes[pos++]:tail;
+        return NTSTATUS(0);
     };
 }
 }
-#define EVP_RAND_generate audit::random
+#define BCryptGenRandom audit::random
 #undef SecureZeroMemory
 #define SecureZeroMemory audit::wipe
 #include "../src/secure_random.cpp"
 #include PASS_CORE_SOURCE
-#undef EVP_RAND_generate
+#undef BCryptGenRandom
 #undef SecureZeroMemory
 
 namespace audit {
@@ -69,7 +66,7 @@ pass::Rules custom(QString chars, int length=4) {
     pass::Rules r;r.upper=r.lower=r.digits=r.symbols=false;
     r.excludeAmbiguous=false;r.custom=chars;r.length=length;return r;
 }
-const QString U="ABCDEFGHIJKLMNOPQRSTUVWXYZ", L="abcdefghijklmnopqrstuvwxyz", D="0123456789", S="!@#$%^&*()-_=+[]{};:,.?/";
+const QString U="ABCDEFGHIJKLMNOPQRSTUVWXYZ", L="abcdefghijklmnopqrstuvwxyz", D="0123456789", S="!@#$%^&*()-_=+[]{};:,.?/~<>|";
 // Independent oracle: do not call production pool(), accepts() or matches().
 QString alphabet(const pass::Rules& r) {
     QString all=(r.upper?U:QString())+(r.lower?L:QString())+(r.digits?D:QString())+(r.symbols?S:QString())+r.custom;
@@ -107,26 +104,41 @@ void test(const char* name,const std::function<void()>& fn) {
 
 int main(int argc,char** argv) {
     QCoreApplication app(argc,argv);
-    std::cout << std::unitbuf;
     using namespace audit;
-    test("OpenSSL call contract and real provider",[]{
+    test("expanded symbols exact byte mapping and uniform weights",[]{
+        pass::Rules r;r.upper=r.lower=r.digits=false;r.excludeAmbiguous=false;r.minSymbols=0;r.length=4;
+        const QString expected="!@#$%^&*()-_=+[]{};:,.?/~<>|";
+        require(expected.size()==28,"pool size");std::vector<int> counts(28);
+        for(int b=0;b<256;++b){
+            reset(stream(std::vector<unsigned char>(4,static_cast<unsigned char>(b)),0));
+            const auto actual=pass::generate(r);
+            require(actual==QString(4,expected[b<252?b%28:0]),"expanded mapping/rejection");
+            if(b<252)++counts[b%28];
+        }
+        for(int count:counts)require(count==9,"expanded symbol weighting");
+        // A custom overlap must not duplicate a built-in character's probability.
+        r.custom=expected+expected;
+        for(int b=0;b<28;++b){reset(stream(std::vector<unsigned char>(4,static_cast<unsigned char>(b))));
+            require(pass::generate(r)==QString(4,expected[b]),"custom overlap mapping");}
+    });
+    test("BCrypt call contract and real provider",[]{
         auto p=pass::generate(custom("abc",128));require(oracle(p,custom("abc",128)),"bad password");
         require(calls>=1 && argErrors==0 && wipes==1 && wipeOK,"API contract/cleanup");
     });
     test("initial RNG failures fail closed and zero buffer",[]{
-        for(int status:{0,-1,-2}) {
-            reset([status](unsigned char* b,size_t n){std::fill(b,b+n,0x41);return status;});
+        for(ULONG status:{0xC0000008UL,0xC000000DUL,0xC0000001UL,0x80000001UL}) {
+            reset([status](PUCHAR b,ULONG n){std::fill(b,b+n,0x41);return static_cast<NTSTATUS>(status);});
             throws([]{pass::generate(custom("ab"));},"安全亂數服務失敗");
-            require(calls==1 && wipes==3 && wipeOK && argErrors==0,"failure cleanup");
+            require(calls==1 && wipes==2 && wipeOK && argErrors==0,"failure cleanup");
         }
     });
     test("later refill failure returns no candidate",[]{
-        int refill=0;reset([&](unsigned char* b,size_t n){std::fill(b,b+n,255);return ++refill==1?1:0;});
+        int refill=0;reset([&](PUCHAR b,ULONG n){std::fill(b,b+n,255);return ++refill==1?NTSTATUS(0):static_cast<NTSTATUS>(0xC0000001UL);});
         throws([]{pass::generate(custom("abc"));},"安全亂數服務失敗");
-        require(calls==2 && wipes==3 && wipeOK,"refill fail behavior");
+        require(calls==2 && wipes==2 && wipeOK,"refill fail behavior");
     });
     test("buffer boundary and no stale byte reuse",[]{
-        int refill=0;reset([&](unsigned char* b,size_t n){std::fill(b,b+n,++refill==1?0:1);return 1;});
+        int refill=0;reset([&](PUCHAR b,ULONG n){std::fill(b,b+n,++refill==1?0:1);return NTSTATUS(0);});
         {pass::Random r;for(int i=0;i<256;++i) require(r.byte()==0,"first buffer");require(calls==1,"early refill");require(r.byte()==1 && calls==2,"boundary refill");}
         require(wipes==1 && wipeOK,"cleanup");
     });
@@ -282,7 +294,7 @@ int main(int argc,char** argv) {
     // Findings are deliberate safety requirements that current code violates.
     // Return failure so automation cannot mistake known defects for a clean audit.
     test("FINDING F1 cancellation must interrupt byte rejection",[]{
-        reset([](unsigned char* b,size_t n){if(calls>4) throw Watchdog();std::fill(b,b+n,255);return 1;});
+        reset([](PUCHAR b,ULONG n){if(calls>4) throw Watchdog();std::fill(b,b+n,255);return NTSTATUS(0);});
         int polls=0;bool watchdog=false;
         try {pass::generate(custom("abc"),[&]{return ++polls>3;});}catch(const Watchdog&) {watchdog=true;}
         catch(const std::runtime_error&) {}
@@ -290,12 +302,14 @@ int main(int argc,char** argv) {
         if(watchdog && polls==1) ++findings;
         require(!watchdog && polls==4 && calls==1 && wipeOK,"cancel never re-polled during byte rejection; test watchdog stopped loop");
     });
-    test("OpenSSL diagnostic retains error queue reason",[]{
-        reset([](unsigned char*,size_t){ERR_raise(ERR_LIB_RAND,ERR_R_INTERNAL_ERROR);return 0;});
-        throws([]{pass::generate(custom("ab"));},"internal error");
+    test("FINDING F2 RNG error must preserve NTSTATUS diagnostics",[]{
+        reset([](PUCHAR,ULONG){return static_cast<NTSTATUS>(0xC000000DUL);});
+        std::string error;try {pass::generate(custom("ab"));}catch(const std::runtime_error& e){error=e.what();}
+        bool code=error.find("C000000D")!=std::string::npos || error.find("c000000d")!=std::string::npos;
+        if(!code) ++findings;require(code,"RNG error drops status 0xC000000D");
     });
     test("F1 rejection budget ends after exactly 1024 rejected bytes",[]{
-        reset([](unsigned char* b,size_t n){if(calls>4) throw Watchdog();std::fill(b,b+n,255);return 1;});
+        reset([](PUCHAR b,ULONG n){if(calls>4) throw Watchdog();std::fill(b,b+n,255);return NTSTATUS(0);});
         throws([]{pass::generate(custom("abc"));},"拒絕取樣次數已達上限");
         require(calls==4 && wipes==2 && wipeOK,"rejection budget or cleanup");
     });
@@ -310,19 +324,21 @@ int main(int argc,char** argv) {
         pass::Random rng;for(int n:{-1,0,257}) throws([&]{rng.below(n);},"範圍無效");
         require(calls==0,"invalid sampler called RNG");
     });
-    test("only OpenSSL return value 1 is success",[]{
-        for(int status:{0,-1,-2,2}) {
-            reset([status](unsigned char*,size_t){return status;});
-            throws([]{pass::generate(custom("ab"));},"OpenSSL 安全亂數服務失敗");
-            require(wipes==3 && wipeOK,"diagnostic cleanup");
+    test("F2 fixed width status codes and NT_SUCCESS semantics",[]{
+        for(ULONG status:{0xC0000008UL,0xC000000DUL,0xC0000001UL,0x80000001UL}) {
+            reset([status](PUCHAR,ULONG){return static_cast<NTSTATUS>(status);});
+            const auto expected="NTSTATUS=0x"+QString::number(status,16).rightJustified(8,'0').toUpper().toStdString();
+            throws([]{pass::generate(custom("ab"));},expected.c_str());
+            require(wipes==2 && wipeOK,"diagnostic cleanup");
         }
-        reset([](unsigned char* b,size_t n){std::fill(b,b+n,0);return 1;});
-        require(pass::generate(custom("ab"))=="aaaa","OpenSSL success semantics");
+        // Successful nonnegative statuses must not be treated as errors.
+        reset([](PUCHAR b,ULONG n){std::fill(b,b+n,0);return NTSTATUS(1);});
+        require(pass::generate(custom("ab"))=="aaaa","NT_SUCCESS semantics");
     });
     test("partial candidate wiped on later RNG failure",[]{
-        reset([](unsigned char* b,size_t n){std::fill(b,b+n,255);if(calls==1){b[0]=0;b[1]=1;return 1;}return 0;});
-        throws([]{pass::generate(custom("abc"));},"OpenSSL 安全亂數服務失敗");
-        require(calls==2 && wipes==3 && nonzeroCandidateWipes==1 && wipeSizes[0]==256 && wipeOK,"partial candidate exception cleanup");
+        reset([](PUCHAR b,ULONG n){std::fill(b,b+n,255);if(calls==1){b[0]=0;b[1]=1;return NTSTATUS(0);}return static_cast<NTSTATUS>(0xC000000DUL);});
+        throws([]{pass::generate(custom("abc"));},"NTSTATUS=0xC000000D");
+        require(calls==2 && wipes==2 && nonzeroCandidateWipes==1 && wipeSizes[0]==8 && wipeOK,"partial candidate exception cleanup");
     });
     test("partial candidate wiped on cancellation and throwing callback",[]{
         for(bool throwing:{false,true}) {
@@ -337,7 +353,7 @@ int main(int argc,char** argv) {
         require(wipes==2 && nonzeroCandidateWipes==1 && wipeOK,"completed candidate cleanup");
     });
     test("partial candidate wiped on rejection budget failure",[]{
-        reset([](unsigned char* b,size_t n){std::fill(b,b+n,255);if(calls==1)b[0]=1;return 1;});
+        reset([](PUCHAR b,ULONG n){std::fill(b,b+n,255);if(calls==1)b[0]=1;return NTSTATUS(0);});
         throws([]{pass::generate(custom("abc"));},"拒絕取樣次數已達上限");
         require(calls==5 && wipes==2 && nonzeroCandidateWipes==1 && wipeOK,"budget failure partial candidate cleanup");
     });
@@ -375,9 +391,9 @@ int main(int argc,char** argv) {
             require(polls==stop && calls==(stop==1?0:1) && wipeOK,"16-bit cancellation/cleanup");
         }
     });
-    test("16-bit OpenSSL failure preserves status and cleanup",[]{
-        reset([](unsigned char* b,size_t n){std::fill(b,b+n,91);return 0;});
-        {pass::Random rng;throws([&]{rng.below16(7776);},"OpenSSL 安全亂數服務失敗");}
+    test("16-bit BCrypt failure preserves status and cleanup",[]{
+        reset([](PUCHAR b,ULONG n){std::fill(b,b+n,91);return NTSTATUS(0xc0000001);});
+        {pass::Random rng;throws([&]{rng.below16(7776);},"NTSTATUS=0xC0000001");}
         require(calls==1 && argErrors==0 && wipeOK,"16-bit API failure cleanup");
     });
     std::cout<<"SUMMARY passed="<<passed<<" failed="<<failed<<" reproduced_findings="<<findings<<"\n";

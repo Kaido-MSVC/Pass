@@ -9,14 +9,6 @@
 class PassphraseTests : public QObject {
     Q_OBJECT
 private slots:
-    void sha512WordRules(){
-        pass::PassphraseRules r;r.algorithm=pass::RandomAlgorithm::Hmac512;
-        for(int count:{4,6,12})for(QChar sep:{QChar('-'),QChar('_'),QChar(' ')}){
-            r.words=count;r.separator=sep;
-            for(int i=0;i<20;++i){auto text=pass::generate(r);QVERIFY(pass::matches(text,r));wipeText(text);}
-        }
-        QVERIFY_THROWS_EXCEPTION(std::runtime_error,pass::generate(r,[]{return true;}));
-    }
     void officialIntegrity() {
         QFile file(":/wordlists/eff_large_wordlist.txt");
         QVERIFY(pass::wordlist().available()); QVERIFY(file.open(QIODevice::ReadOnly));

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Kaido-MSVC
 #include "wordlist.h"
 #include <QCryptographicHash>
 #include <QFile>

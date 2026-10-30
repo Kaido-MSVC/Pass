@@ -1,28 +1,21 @@
 Unicode true
 !include "MUI2.nsh"
 !include "x64.nsh"
-; deploy.ps1 passes /DPASS_VERSION from CMakeLists.txt project(VERSION).
-!ifndef PASS_VERSION
-  !error "Build with makensis /DPASS_VERSION=x.y.z (run deploy.ps1)."
-!endif
-!define PASS_AUTHOR "Kaido-MSVC"
-!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pass-SSLLocal"
-Name "Pass-SSL 安全密碼產生器 v${PASS_VERSION}"
-VIProductVersion "${PASS_VERSION}.0"
-VIAddVersionKey "ProductName" "Pass-SSL"
-VIAddVersionKey "CompanyName" "${PASS_AUTHOR}"
-VIAddVersionKey "ProductVersion" "${PASS_VERSION}"
-VIAddVersionKey "FileVersion" "${PASS_VERSION}"
-VIAddVersionKey "FileDescription" "Pass-SSL v${PASS_VERSION} Setup"
-VIAddVersionKey "LegalCopyright" "Copyright (C) 2026 ${PASS_AUTHOR}"
-OutFile "..\dist\installer\Pass-SSL-${PASS_VERSION}-win64-setup.exe"
-InstallDir "$PROGRAMFILES64\Pass-SSL"
+Name "Pass 安全密碼產生器 v2.0 Plus"
+VIProductVersion "2.0.0.0"
+VIAddVersionKey "ProductName" "Pass v2.0 Plus"
+VIAddVersionKey "ProductVersion" "2.0 Plus"
+VIAddVersionKey "FileVersion" "2.0 Plus"
+VIAddVersionKey "FileDescription" "Pass v2.0 Plus Setup"
+VIAddVersionKey "CompanyName" "Kaido-MSVC"
+VIAddVersionKey "LegalCopyright" "Copyright (c) 2026 Kaido-MSVC"
+OutFile "..\dist\installer\Pass-2.0-Plus-win64-setup.exe"
+InstallDir "$PROGRAMFILES64\Pass"
 RequestExecutionLevel admin
 !define MUI_ICON "..\resources\app.ico"
 !define MUI_UNICON "..\resources\app.ico"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "..\LICENSE.txt"
-!insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -35,30 +28,32 @@ Function .onInit
  ${EndIf}
  SetRegView 64
 FunctionEnd
-Section "Pass-SSL（必要）" SEC_MAIN
- SectionIn RO
+Section "Pass" SEC_MAIN
  SetShellVarContext all
- ; Upgrade: let the previous version's uninstaller remove its own file list first,
- ; so files dropped in this version do not linger. _?= keeps it running in place.
- IfFileExists "$INSTDIR\Uninstall.exe" 0 +2
-  ExecWait '"$INSTDIR\Uninstall.exe" /S _?=$INSTDIR'
- ; The VC++ runtime DLLs ship app-local in the package; no system-wide redist is installed.
+ InitPluginsDir
+ SetOutPath "$PLUGINSDIR"
+ File "..\dist\redist\vc_redist.x64.exe"
+ ExecWait '"$PLUGINSDIR\vc_redist.x64.exe" /install /quiet /norestart' $0
+ ${If} $0 == 3010
+  SetRebootFlag true
+ ${ElseIf} $0 != 0
+ ${AndIf} $0 != 1638
+  MessageBox MB_ICONSTOP "VC++ 執行階段安裝失敗（代碼 $0）。"
+  Abort
+ ${EndIf}
  SetOutPath "$INSTDIR"
- File /r "..\dist\portable-v${PASS_VERSION}\*.*"
+ File /r "..\dist\portable-v2.0-Plus\*.*"
  WriteUninstaller "$INSTDIR\Uninstall.exe"
- CreateDirectory "$SMPROGRAMS\Pass-SSL"
- CreateShortcut "$SMPROGRAMS\Pass-SSL\Pass-SSL.lnk" "$INSTDIR\Pass.exe"
- WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayName" "Pass-SSL 安全密碼產生器"
- WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayVersion" "${PASS_VERSION}"
- WriteRegStr HKLM "${UNINSTALL_KEY}" "Publisher" "${PASS_AUTHOR}"
- WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\Pass.exe"
- WriteRegStr HKLM "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
- WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoModify" 1
- WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoRepair" 1
-SectionEnd
-Section "桌面捷徑" SEC_DESKTOP
- SetShellVarContext all
- CreateShortcut "$DESKTOP\Pass-SSL.lnk" "$INSTDIR\Pass.exe"
+ CreateDirectory "$SMPROGRAMS\Pass"
+ CreateShortcut "$SMPROGRAMS\Pass\Pass.lnk" "$INSTDIR\Pass.exe"
+ CreateShortcut "$DESKTOP\Pass.lnk" "$INSTDIR\Pass.exe"
+ WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PassLocal" "DisplayName" "Pass v2.0 Plus 安全密碼產生器"
+ WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PassLocal" "DisplayVersion" "2.0 Plus"
+ WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PassLocal" "Publisher" "Kaido-MSVC"
+ WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PassLocal" "DisplayIcon" "$INSTDIR\Pass.exe"
+ WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PassLocal" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+ WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PassLocal" "NoModify" 1
+ WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PassLocal" "NoRepair" 1
 SectionEnd
 Section "Uninstall"
  SetShellVarContext all
@@ -66,8 +61,8 @@ Section "Uninstall"
  !include "uninstall-files.nsh"
  Delete "$INSTDIR\Uninstall.exe"
  RMDir "$INSTDIR"
- Delete "$SMPROGRAMS\Pass-SSL\Pass-SSL.lnk"
- RMDir "$SMPROGRAMS\Pass-SSL"
- Delete "$DESKTOP\Pass-SSL.lnk"
- DeleteRegKey HKLM "${UNINSTALL_KEY}"
+ Delete "$SMPROGRAMS\Pass\Pass.lnk"
+ RMDir "$SMPROGRAMS\Pass"
+ Delete "$DESKTOP\Pass.lnk"
+ DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\PassLocal"
 SectionEnd

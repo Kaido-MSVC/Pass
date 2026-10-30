@@ -28,13 +28,7 @@ private slots:
   qInfo()<<"Estimator 2000 mixed-length cases ms:"<<elapsed.elapsed();
   QVERIFY(elapsed.elapsed()<30000);
  }
- void sha512Rules(){
-  pass::Rules r;r.algorithm=pass::RandomAlgorithm::Hmac512;
-  for(int length:{4,20,128}){r.length=length;for(int i=0;i<40;++i){auto text=pass::generate(r);QVERIFY(pass::matches(text,r));text.fill(QChar(0));}}
-  r.upper=r.lower=r.digits=r.symbols=false;r.custom="abc";r.length=16;
-  for(int i=0;i<40;++i){auto text=pass::generate(r);QVERIFY(pass::matches(text,r));text.fill(QChar(0));}
-  QVERIFY_THROWS_EXCEPTION(std::runtime_error,pass::generate(r,[]{return true;}));
- }
+
  void generatedRules(){pass::Rules r;QSet<QString> seen;for(int i=0;i<150;++i){auto p=pass::generate(r);QVERIFY(pass::matches(p,r));QVERIFY(!p.contains('0'));QVERIFY(!p.contains('I'));seen.insert(p);}QCOMPARE(seen.size(),150);}
  void invalid(){pass::Rules r;r.length=4;r.minUpper=4;r.minLower=4;QVERIFY(!pass::validate(r).isEmpty());QVERIFY_THROWS_EXCEPTION(std::runtime_error,pass::generate(r));r=pass::Rules{};r.excluded="ABCDEFGHIJKLMNOPQRSTUVWXYZ";QVERIFY(!pass::validate(r).isEmpty());r=pass::Rules{};r.custom="中文";QVERIFY(!pass::validate(r).isEmpty());}
  void customOnly(){pass::Rules r;r.upper=r.lower=r.digits=r.symbols=false;r.custom="aabbcc";r.length=12;QVERIFY(pass::validate(r).isEmpty());for(int i=0;i<30;++i)QVERIFY(pass::matches(pass::generate(r),r));QVERIFY(qAbs(pass::entropy(r)-12*std::log2(3.0))<0.00001);}
@@ -63,9 +57,9 @@ private slots:
   for(int i=0;i<1000;++i){QString input;for(int k=0;k<20;++k)input+=alphabet[pick(fixture)];const int score=pass::analyze(input).score;belowStrong+=score<60;belowVeryStrong+=score<80;input.fill(QChar(0));}
   qInfo()<<"Uniform fixture: below strong"<<belowStrong<<"below very strong"<<belowVeryStrong<<"of 1000";
   QVERIFY(belowStrong<=5);QVERIFY(belowVeryStrong<=20);
-  // Exercise real outputs of each unchanged DRBG; never print or persist them.
-  for(auto algorithm:{pass::RandomAlgorithm::Ctr,pass::RandomAlgorithm::Hash,pass::RandomAlgorithm::Hmac,pass::RandomAlgorithm::Hmac512}){
-   pass::Rules r;r.algorithm=algorithm;int low=0;
+  // Exercise real outputs of the unchanged BCrypt provider; never print or persist them.
+  {
+   pass::Rules r;int low=0;
    for(int i=0;i<50;++i){auto input=pass::generate(r);low+=pass::analyze(input).score<60;input.fill(QChar(0));}
    QVERIFY(low<=2);
   }
