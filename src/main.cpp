@@ -138,9 +138,11 @@ protected:
     }
 public:
 #ifdef PASS_TESTING
-    explicit Window(Generator generator = static_cast<Generator>(pass::generate), WordGenerator wordGenerator = static_cast<WordGenerator>(pass::generate)) {
+    explicit Window(Generator generator = static_cast<Generator>(pass::generate), WordGenerator wordGenerator = static_cast<WordGenerator>(pass::generate),
+                    const QStringList& systemUiLanguages = QLocale::system().uiLanguages()) {
 #else
     Window() {
+        const QStringList systemUiLanguages = QLocale::system().uiLanguages();
 #endif
         pass::uiLanguage=0;
         setWindowTitle(titleText()); setWindowIcon(QIcon(":/app.ico"));
@@ -289,9 +291,12 @@ public:
         }
         for(int i=0;i<tabs->count();++i)tabs->widget(i)->setProperty("tabCaption",tabs->tabText(i));
         for(auto combo:{separator,algorithm,appearance})for(int i=0;i<combo->count();++i)combo->setItemData(i,combo->itemText(i),Qt::UserRole+1);
+        // Restore a supported saved choice first; otherwise follow Windows UI language.
+        // Initialize before connecting so startup cannot persist a transient selection.
+        const int savedLanguage=language->findData(settings.value("ui/language"));
+        const int systemLanguage=language->findData(pass::preferredUiLanguage(systemUiLanguages));
+        language->setCurrentIndex(savedLanguage<0?systemLanguage:savedLanguage);retranslate();
         connect(language,&QComboBox::currentIndexChanged,this,[this]{retranslate();saveRules();});
-        const int lang=language->findData(settings.value("ui/language","zh-TW"));
-        language->setCurrentIndex(lang<0?0:lang);retranslate();
         countdownTimer.setParent(this);countdownTimer.setObjectName("clipboardCountdown");
         connect(&countdownTimer,&QTimer::timeout,this,[this]{updateCountdown();});
         connect(QApplication::clipboard(),&QClipboard::dataChanged,this,[this]{

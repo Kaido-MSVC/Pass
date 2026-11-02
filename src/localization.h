@@ -1,8 +1,20 @@
 #pragma once
 #include <QString>
+#include <QStringList>
 #include <array>
 #include <algorithm>
 namespace pass {
+// Match Windows UI preferences in order; retain the three existing translations.
+inline QString preferredUiLanguage(const QStringList& uiLanguages) {
+    for (QString tag : uiLanguages) {
+        tag.replace('_', '-');
+        const QString language = tag.section('-', 0, 0).toLower();
+        if (language == "zh") return QStringLiteral("zh-TW");
+        if (language == "ja") return QStringLiteral("ja");
+        if (language == "en") return QStringLiteral("en");
+    }
+    return QStringLiteral("en"); // No supported system preference.
+}
 inline int uiLanguage = 0; // Accessed only on the GUI thread.
 inline QString uiText(const QString& source) {
     if (uiLanguage == 0) return source;

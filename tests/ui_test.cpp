@@ -96,7 +96,45 @@ private slots:
   // Previous window destruction is intentionally non-blocking. Finish its
   // abandoned worker before a new fixture clicks a freshly created button.
   QTRY_VERIFY_WITH_TIMEOUT(!generationBusy.load(),12000);
-  QSettings().clear();QSettings().sync();pass::uiLanguage=0;
+  QSettings().clear();
+  // Caption-based legacy cases must not depend on the test machine's language.
+  QSettings().setValue("ui/language","zh-TW");QSettings().sync();pass::uiLanguage=0;
+ }
+ void firstStartupLanguage_data(){
+  QTest::addColumn<QStringList>("systemLanguages");QTest::addColumn<QString>("expected");
+  QTest::newRow("traditional")<<QStringList{"zh-Hant-TW"}<<QStringLiteral("zh-TW");
+  QTest::newRow("hong-kong")<<QStringList{"zh-Hant-HK"}<<QStringLiteral("zh-TW");
+  QTest::newRow("other-chinese")<<QStringList{"zh-Hans-CN"}<<QStringLiteral("zh-TW");
+  QTest::newRow("japanese")<<QStringList{"ja-JP"}<<QStringLiteral("ja");
+  QTest::newRow("english")<<QStringList{"en-GB"}<<QStringLiteral("en");
+  QTest::newRow("ordered")<<QStringList{"ja-JP","zh-TW","en-US"}<<QStringLiteral("ja");
+  QTest::newRow("supported-fallback")<<QStringList{"fr-FR","en-US","ja-JP"}<<QStringLiteral("en");
+  QTest::newRow("unsupported")<<QStringList{"de-DE"}<<QStringLiteral("en");
+  QTest::newRow("empty")<<QStringList{}<<QStringLiteral("en");
+  QTest::newRow("normalized")<<QStringList{"JA_jp"}<<QStringLiteral("ja");
+ }
+ void firstStartupLanguage(){
+  QFETCH(QStringList,systemLanguages);QFETCH(QString,expected);
+  QSettings().remove("ui/language");QSettings().sync();
+  {Window w(static_cast<Generator>(pass::generate),static_cast<WordGenerator>(pass::generate),systemLanguages);
+   QCOMPARE(w.findChild<QComboBox*>("uiLanguage")->currentData().toString(),expected);}
+  // Invalid stored values use the same supported system fallback.
+  QSettings().setValue("ui/language","invalid");QSettings().sync();
+  {Window w(static_cast<Generator>(pass::generate),static_cast<WordGenerator>(pass::generate),systemLanguages);
+   QCOMPARE(w.findChild<QComboBox*>("uiLanguage")->currentData().toString(),expected);}
+  for(auto code:{"zh-TW","ja","en"}){
+   {Window w(static_cast<Generator>(pass::generate),static_cast<WordGenerator>(pass::generate),systemLanguages);
+    auto combo=w.findChild<QComboBox*>("uiLanguage");
+    combo->setCurrentIndex((combo->findData(code)+1)%combo->count());
+    combo->setCurrentIndex(combo->findData(code));
+    QCOMPARE(QSettings().value("ui/language").toString(),QString::fromLatin1(code));}
+   Window restored(static_cast<Generator>(pass::generate),static_cast<WordGenerator>(pass::generate),systemLanguages);
+   QCOMPARE(restored.findChild<QComboBox*>("uiLanguage")->currentData().toString(),QString::fromLatin1(code));
+  }
+ }
+ void actualSystemLanguage(){
+  QSettings().remove("ui/language");QSettings().sync();Window w;
+  QCOMPARE(w.findChild<QComboBox*>("uiLanguage")->currentData().toString(),pass::preferredUiLanguage(QLocale::system().uiLanguages()));
  }
  void patternStrengthLanguages(){
   Window w;
@@ -234,6 +272,12 @@ private slots:
  }
  void wordBatchLongestClipboard(){
   Window w(static_cast<Generator>(pass::generate),longestWordGenerator);w.show();
+  QVERIFY(QTest::qWaitForWindowExposed(&w));
+  auto clipboard=QApplication::clipboard();
+  QSignalSpy clipboardChanged(clipboard,&QClipboard::dataChanged);QVERIFY(clipboardChanged.isValid());
+  clipboard->clear();
+  QTRY_VERIFY_WITH_TIMEOUT(!clipboardChanged.isEmpty(),2000);
+  QTRY_VERIFY_WITH_TIMEOUT(clipboard->text().isEmpty(),2000);
   w.findChild<QTabWidget*>("modeTabs")->setCurrentIndex(1);
   auto count=w.findChild<QSpinBox*>("wordCount");auto batch=w.findChild<QSpinBox*>("wordBatch");QCOMPARE(count->value(),6);QCOMPARE(batch->value(),1);
   QCOMPARE(w.findChild<QComboBox*>("separator")->currentData().toString(),QStringLiteral("-"));
@@ -244,13 +288,37 @@ private slots:
   for(const auto& line:text.split('\n'))QCOMPARE(line.size(),119);
   auto check=w.findChildren<QLineEdit*>().last();QCOMPARE(check->text().size(),119);
   QVERIFY(w.findChild<QLabel*>("resultLength")->text().contains("119"));
-  button(w,QStringLiteral("複製全部"))->click();QCOMPARE(QApplication::clipboard()->text(),text);
-  auto timer=w.findChild<QTimer*>("clipboardTimer");QCOMPARE(timer->interval(),30000);
-  timer->start(1);QTRY_VERIFY(QApplication::clipboard()->text().isEmpty());
-  button(w,QStringLiteral("複製全部"))->click();QApplication::clipboard()->setText("new external data");
-  timer->start(1);QTest::qWait(30);QCOMPARE(QApplication::clipboard()->text(),QStringLiteral("new external data"));
-  button(w,QStringLiteral("複製全部"))->click();w.findChild<QTabWidget*>("modeTabs")->setCurrentIndex(0);
-  QVERIFY(output->toPlainText().isEmpty());QVERIFY(check->text().isEmpty());QVERIFY(QApplication::clipboard()->text().isEmpty());
+  auto timer=w.findChild<QTimer*>("clipboardTimer");QVERIFY(timer);
+  auto copy=button(w,QStringLiteral("複製全部"));QVERIFY(copy);
+  // Trigger each write once. Pump events until the notification and content agree;
+  // retrying the click would hide a failed copy or stale native ownership.
+  clipboardChanged.clear();copy->click();
+  QTRY_VERIFY_WITH_TIMEOUT(!clipboardChanged.isEmpty(),2000);
+  QTRY_VERIFY_WITH_TIMEOUT(clipboard->text()==text,2000);
+  QCOMPARE(GetClipboardOwner(),reinterpret_cast<HWND>(w.winId()));
+  QVERIFY(timer->isActive());QCOMPARE(timer->interval(),30000);
+  QSignalSpy expired(timer,&QTimer::timeout);QVERIFY(expired.isValid());
+  timer->start(1);QTRY_VERIFY_WITH_TIMEOUT(!expired.isEmpty(),2000);
+  QTRY_VERIFY_WITH_TIMEOUT(clipboard->text().isEmpty(),2000);
+  QTRY_VERIFY_WITH_TIMEOUT(!timer->isActive(),2000);
+  clipboardChanged.clear();copy->click();
+  QTRY_VERIFY_WITH_TIMEOUT(!clipboardChanged.isEmpty(),2000);
+  QTRY_VERIFY_WITH_TIMEOUT(clipboard->text()==text,2000);
+  QVERIFY(timer->isActive());
+  clipboardChanged.clear();clipboard->setText("new external data");
+  QTRY_VERIFY_WITH_TIMEOUT(!clipboardChanged.isEmpty(),2000);
+  QTRY_COMPARE_WITH_TIMEOUT(clipboard->text(),QStringLiteral("new external data"),2000);
+  QTRY_VERIFY_WITH_TIMEOUT(!timer->isActive(),2000);
+  // Explicitly fire expiry after replacement, and wait for the timeout itself.
+  expired.clear();timer->start(1);QTRY_VERIFY_WITH_TIMEOUT(!expired.isEmpty(),2000);
+  QCOMPARE(clipboard->text(),QStringLiteral("new external data"));
+  clipboardChanged.clear();copy->click();
+  QTRY_VERIFY_WITH_TIMEOUT(!clipboardChanged.isEmpty(),2000);
+  QTRY_VERIFY_WITH_TIMEOUT(clipboard->text()==text,2000);
+  QVERIFY(timer->isActive());
+  w.findChild<QTabWidget*>("modeTabs")->setCurrentIndex(0);
+  QVERIFY(output->toPlainText().isEmpty());QVERIFY(check->text().isEmpty());
+  QTRY_VERIFY_WITH_TIMEOUT(clipboard->text().isEmpty(),2000);
   for(auto box:w.findChildren<QCheckBox*>())if(box->text()==QStringLiteral("顯示密碼"))QVERIFY(!box->isChecked());
   wipeText(text);
  }

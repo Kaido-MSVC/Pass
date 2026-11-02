@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
-project(PassSSL VERSION 2.2.3 LANGUAGES CXX RC)
+project(PassSSL VERSION 2.2.4 LANGUAGES CXX RC)
 # Single source of truth for version and author; see src/pass_version.h.in.
 set(PASS_AUTHOR "Kaido-MSVC")
 set(PASS_COPYRIGHT_YEAR "2026")
@@ -80,6 +80,9 @@ target_compile_options(pass_core_test PRIVATE /utf-8 /W4)
 target_include_directories(pass_core PUBLIC src)
 target_link_libraries(pass_core PUBLIC Qt6::Core OpenSSL::Crypto pass_estimator)
 target_compile_options(pass_core PRIVATE /utf-8 /W4)
+# Ninja RC compilation must track the configured version header explicitly.
+set_source_files_properties(resources/app.rc PROPERTIES
+    OBJECT_DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/generated/pass_version.h")
 qt_add_executable(Pass WIN32 src/main.cpp resources/resources.qrc resources/app.rc)
 target_link_libraries(Pass PRIVATE pass_core Qt6::Widgets)
 target_compile_options(Pass PRIVATE /utf-8 /W4)
