@@ -72,6 +72,7 @@ inline QString uiText(const QString& source) {
     {QStringLiteral("按下「產生密碼」開始"), QStringLiteral("Press Generate to start"), QStringLiteral("「生成」を押して開始")},
     {QStringLiteral("顯示密碼"), QStringLiteral("Reveal passwords"), QStringLiteral("パスワードを表示")},
     {QStringLiteral("複製後 30 秒清除剪貼簿"), QStringLiteral("Clear clipboard 30 seconds after copy"), QStringLiteral("コピー後30秒でクリップボードを消去")},
+    {QStringLiteral("僅在程式開啟時自動清除；關閉後保留剪貼簿供貼上。"), QStringLiteral("Auto-clear runs while the app is open. Closing keeps the clipboard available for pasting."), QStringLiteral("自動消去はアプリの起動中のみ動作します。終了後も貼り付けできます。")},
     {QStringLiteral("複製全部"), QStringLiteral("Copy all"), QStringLiteral("すべてコピー")},
     {QStringLiteral("清除結果"), QStringLiteral("Clear results"), QStringLiteral("結果を消去")},
     {QStringLiteral("密碼強度檢查"), QStringLiteral("Password strength check"), QStringLiteral("パスワード強度の確認")},

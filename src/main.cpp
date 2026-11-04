@@ -373,6 +373,7 @@ public:
             if(qtTranslator.load(file))qApp->installTranslator(&qtTranslator);
         }
         setWindowTitle(titleText());
+        autoClear->setToolTip(pass::uiText(QStringLiteral("僅在程式開啟時自動清除；關閉後保留剪貼簿供貼上。")));
         for(auto widget:findChildren<QWidget*>()) {
             const auto caption=widget->property("caption");
             if(caption.isValid()){
@@ -455,7 +456,13 @@ public:
         lengthLabel->setText(pass::uiText(QStringLiteral("第一筆長度：%1 字元")).arg(firstLength));
         wipeText(display);wipeText(text);
     }
-    ~Window() override {pollTimer.stop();abandonJob();saveRules();clearResults();clearCopied(false);}
+    ~Window() override {
+        pollTimer.stop();abandonJob();saveRules();clearResults();
+        // CF_UNICODETEXT was rendered into Windows-owned memory at copy time.
+        // Closing cancels our timer and wipes only local tracking: clearing the
+        // system clipboard here makes copy -> immediate exit -> paste fail.
+        clearTimer.stop();countdownTimer.stop();copied.clear();clipboardSequence=0;
+    }
 };
 void applyAppearance(QApplication& app, const QString& choice) {
     // Leave system detection enabled even when the user explicitly chooses a theme.

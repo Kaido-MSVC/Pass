@@ -30,7 +30,7 @@ Pass-SSL 本身以 **MIT License** 開源，全文見 `LICENSE.txt`。MIT 只涵
 - 8-bit 字元拒絕取樣與整組候選拒絕取樣；16-bit 單詞取樣接受 0–62207、拒絕 62208–65535。保留 1,024 次單次取樣上限及 100,000 次字元候選上限。
 - 整批 10 秒期限、合作式取消、單一未完成工作限制；取消或逾時後拒收延遲結果，不強制終止執行緒。
 - RNG 失敗立即清零緩衝區；RAII 清除緩衝區、部分候選及批次結果，釋放 DRBG 前 uninstantiate。測試使用 EVP_RAND_verify_zeroization 驗證 DRBG 清零。
-- 預設遮罩、複製後 30 秒倒數；使用 Windows 原生剪貼簿鎖定、複製序號與內容核對，避免清除其他應用後續複製內容（包括相同文字）。不保存密碼歷史。
+- 預設遮罩、程式開啟時複製後 30 秒倒數，退出後保留剪貼簿並取消自動清除；使用 Windows 原生剪貼簿鎖定、複製序號與內容核對，避免清除其他應用後續複製內容（包括相同文字）。不保存密碼歷史。
 
 取消無法中斷正在執行的 OpenSSL／OS 呼叫，該呼叫返回後才完成其資源清理。Qt 控制項、隱含共享副本、系統剪貼簿歷史、暫存器、頁面檔及傾印不保證全面抹除。統計測試是回歸檢查，不能證明密碼學安全。
 
@@ -99,6 +99,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/run-validation.ps1
 
 API 依據：[OpenSSL EVP_RAND](https://docs.openssl.org/4.0/man3/EVP_RAND/)、[Windows OpenClipboard](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-openclipboard)、[Clipboard sequence](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getclipboardsequencenumber)。
 
+## 剪貼簿退出修正（v2.2.5）
+
+- 修正視窗解構時主動清空剪貼簿，導致複製後立即退出可能無法貼上的問題。退出只清除應用內秘密與追蹤緩衝，保留複製時已交給 Windows 的完整 `CF_UNICODETEXT`；不依賴退出時延遲提供資料。
+- 30 秒自動清除僅在程式開啟時運作，退出即取消；清除結果、切換模式／演算法與開啟期間的到期清除仍保留原有防覆寫核對。提示文字已說明退出後保留內容的行為。
+- Windows 剪貼簿歷史與雲端排除標記維持不變：Win+V 不出現密碼不代表 Ctrl+V 無法貼上。其他程式或 Windows 清空／覆寫剪貼簿後，程式不會復原密碼。
+- `clipboard_exit` 使用公開固定樣本，從實際視窗產生、點複製、立即退出，待寫入行程完全結束，再啟動獨立原生讀取行程。涵蓋視窗 close、WM_CLOSE、SC_CLOSE（標題列／系統關閉）、QApplication 退出、同步解構，自動清除開／關，以及外部覆寫／清空；只記錄結果，不記錄剪貼簿文字。
+
 ## 版本紀錄
 
 ### v2.2.5 OpenSSL 與授權同步更新
@@ -147,7 +154,7 @@ Windows 10 2004（build 19041）起支援排除；較舊系統依 Microsoft 文�
 詳見 `third_party/zxcvbn-c/PASS-INTEGRATION.md`。NUL 或超過 128 個 UTF-16 單位的輸入不評估。
 
 30 秒到期清除遇到鎖定時，每 100ms 非阻塞重試，最多 50 次且最多 5 秒；每次在鎖內重新核對序號、擁有者和內容。
-若使用者後來複製任何其他內容（即使文字相同），取消本次清除。停用自動清除會取消排程；關閉視窗僅作一次即時嘗試，不阻塞退出。
+若使用者後來複製任何其他內容（即使文字相同），取消本次清除。停用自動清除會取消排程；關閉視窗取消排程並清除應用內追蹤副本，保留 Windows 剪貼簿供退出後貼上；關閉後不再執行 30 秒自動清除。
 持續鎖定超過重試上限時停止重試並清除應用內追蹤副本，不宣稱系統剪貼簿已清除。系統歷史、雲端剪貼簿和其他程序保存的副本不在抹除保證範圍。
 
 完整回歸包含原有 8 組、上游估算器語料、配置失敗清理測試，以及 v2.2.2 的擷取排除測試，共 11 組 CTest。

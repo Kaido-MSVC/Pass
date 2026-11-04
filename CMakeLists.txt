@@ -144,3 +144,13 @@ target_link_libraries(pass_stress_tests PRIVATE pass_core Qt6::Core Psapi)
 target_compile_options(pass_stress_tests PRIVATE /utf-8 /W4)
 # Run explicitly from tools/run-validation.ps1, not the fast CTest suite.
 
+
+# Writer exits fully before a fresh native reader inspects the clipboard.
+qt_add_executable(pass_clipboard_exit_tests tests/clipboard_exit_test.cpp resources/resources.qrc)
+target_link_libraries(pass_clipboard_exit_tests PRIVATE pass_core_test Qt6::Test Qt6::Widgets)
+target_compile_options(pass_clipboard_exit_tests PRIVATE /utf-8 /W4)
+add_test(NAME clipboard_exit COMMAND pass_clipboard_exit_tests -o clipboard_exit-results.txt,txt)
+set_tests_properties(clipboard_exit PROPERTIES TIMEOUT 300)
+# All UI tests share the interactive Windows clipboard.
+set_tests_properties(user_interface clipboard_exit missing_wordlist capture_protection PROPERTIES RESOURCE_LOCK windows_clipboard)
+

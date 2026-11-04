@@ -18,7 +18,7 @@ if($CollectOnly){
     $groups=@([regex]::Matches($lastText,'(?s)\d+/\d+ Testing: (\w+).*?Test time =\s*([\d.]+) sec.*?Test (Passed|Failed)\.') | ForEach-Object {
         [pscustomobject]@{name=$_.Groups[1].Value;seconds=$_.Groups[2].Value;passed=($_.Groups[3].Value -eq 'Passed')}
     })
-    $testExit=0;if($groups.Count -ne 11 -or @($groups | Where-Object {!$_.passed}).Count){$testExit=1}
+    $testExit=0;if($groups.Count -ne 12 -or @($groups | Where-Object {!$_.passed}).Count){$testExit=1}
     $securityOutput=$lastText
 }else{
     $ErrorActionPreference='Continue' # Native stderr must not bypass failure-report generation on Windows PowerShell.
