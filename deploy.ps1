@@ -13,6 +13,15 @@ $rootLine = $cache | Where-Object { $_ -match '^OPENSSL_ROOT_DIR:PATH=' }
 if (!$rootLine) { throw 'OpenSSL root missing from configured build.' }
 $opensslRoot = $rootLine.Substring($rootLine.IndexOf('=') + 1)
 $crypto = Join-Path $opensslRoot 'libcrypto-4-x64.dll'
+$expectedOpenSSL = '4.1.0'
+if ([Diagnostics.FileVersionInfo]::GetVersionInfo($crypto).ProductVersion -ne $expectedOpenSSL) { throw "Expected OpenSSL $expectedOpenSSL runtime." }
+# Refuse stale notices before replacing any distribution files.
+foreach ($pair in @(@('license.txt','OpenSSL-Apache-2.0.txt'),@('authors.txt','OpenSSL-authors.txt'))) {
+    if ((Get-FileHash -LiteralPath (Join-Path $opensslRoot $pair[0])).Hash -ne
+        (Get-FileHash -LiteralPath (Join-Path 'LICENSES' $pair[1])).Hash) {
+        throw "OpenSSL attribution differs from installed distribution: $($pair[0]). Review LICENSES first."
+    }
+}
 if ((Get-FileHash $crypto).Hash -ne (Get-FileHash 'build\libcrypto-4-x64.dll').Hash) { throw 'Build/runtime OpenSSL mismatch. Reconfigure first.' }
 
 # Locate the newest installed VC++ x64 CRT redistributable instead of a hard-coded build number.
@@ -54,6 +63,7 @@ Copy-Item -Path (Join-Path $crtDir.FullName '*.dll') -Destination $portable
 Copy-Item -LiteralPath 'README.md','THIRD_PARTY_NOTICES.md','LICENSE.txt' -Destination $portable
 Copy-Item -LiteralPath 'LICENSES' -Destination $portable -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $opensslRoot 'license.txt') -Destination "$portable\LICENSES\OpenSSL-Apache-2.0.txt"
+Copy-Item -LiteralPath (Join-Path $opensslRoot 'authors.txt') -Destination "$portable\LICENSES\OpenSSL-authors.txt"
 # default provider is compiled into libcrypto; no external provider/config is required.
 @('[Paths]','Plugins=.') | Set-Content -LiteralPath "$portable\qt.conf" -Encoding ascii
 
@@ -84,7 +94,7 @@ $artifacts = @("Pass-SSL-$version-win64-portable.zip", "portable-v$version/Pass.
 if (!$SkipInstaller) { $artifacts += "installer/Pass-SSL-$version-win64-setup.exe" }
 $kept = @()
 if (Test-Path -LiteralPath $sumsPath) {
-    $kept = @([IO.File]::ReadAllLines($sumsPath) | Where-Object { $_ -and ($_ -split '\s+', 2)[1] -notin $artifacts })
+    $kept = @([IO.File]::ReadAllLines($sumsPath) | Where-Object { $_ -and ($_ -split '\s+', 2)[1] -notin ($artifacts + @("Pass-SSL-$version-win64-setup.exe")) })
 }
 $fresh = foreach ($name in $artifacts) {
     $file = Join-Path $PSScriptRoot ('dist\' + $name.Replace('/', '\'))

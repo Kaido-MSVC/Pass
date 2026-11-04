@@ -32,7 +32,8 @@ compatible versions. Help > About Qt in the application shows Qt's own notice.
 
 Microsoft Visual C++ runtime DLLs are distributed app-local in both the portable
 package and the installer; no system-wide Redistributable is installed.
-Microsoft license terms apply; see LICENSES/Microsoft-Redist.txt.
+Microsoft license terms apply; LICENSES/Microsoft-Redist.txt identifies the official
+redistribution list and license terms (it is a guide, not the complete Microsoft license).
 
 ## EFF Long Wordlist
 
@@ -46,7 +47,7 @@ Full legal text is included in LICENSES/EFF-CC-BY-4.0.txt.
 The original wordlist is embedded unchanged; runtime parsing removes dice codes
 without changing the words or order. Pass is not endorsed by EFF.
 
-## OpenSSL 4.0.3
+## OpenSSL 4.1.0
 
 Copyright The OpenSSL Project Authors and contributors.
 Pass-SSL dynamically links libcrypto-4-x64.dll (VC-WIN64A, release /MD).

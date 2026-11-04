@@ -39,7 +39,7 @@ inline QString uiText(const QString& source) {
     {QStringLiteral("第三方元件：Qt（LGPLv3）、OpenSSL（Apache License 2.0）、zxcvbn-c（MIT）、EFF Long Wordlist（CC BY 4.0）。"), QStringLiteral("Third-party components: Qt (LGPLv3), OpenSSL (Apache License 2.0), zxcvbn-c (MIT), EFF Long Wordlist (CC BY 4.0)."), QStringLiteral("サードパーティ製コンポーネント：Qt（LGPLv3）、OpenSSL（Apache License 2.0）、zxcvbn-c（MIT）、EFF Long Wordlist（CC BY 4.0）。")},
     {QStringLiteral("完整授權條款見程式目錄的 LICENSE.txt、THIRD_PARTY_NOTICES.md 與 LICENSES 資料夾。"), QStringLiteral("Full license terms are in LICENSE.txt, THIRD_PARTY_NOTICES.md and the LICENSES folder next to the program."), QStringLiteral("ライセンス全文はプログラムフォルダーの LICENSE.txt、THIRD_PARTY_NOTICES.md、LICENSES フォルダーを参照してください。")},
     {QStringLiteral("為每個帳號，產生獨一無二的密碼"), QStringLiteral("Create a unique password for every account"), QStringLiteral("アカウントごとに固有のパスワードを生成")},
-    {QStringLiteral("OpenSSL 4.0.3 · 本機離線運作 · 不儲存密碼"), QStringLiteral("OpenSSL 4.0.3 · Offline · No password storage"), QStringLiteral("OpenSSL 4.0.3 · オフライン · パスワードを保存しません")},
+    {QStringLiteral("OpenSSL 4.1.0 · 本機離線運作 · 不儲存密碼"), QStringLiteral("OpenSSL 4.1.0 · Offline · No password storage"), QStringLiteral("OpenSSL 4.1.0 · オフライン · パスワードを保存しません")},
     {QStringLiteral("產生規則"), QStringLiteral("Generation rules"), QStringLiteral("生成ルール")},
     {QStringLiteral("亂數演算法"), QStringLiteral("Random algorithm"), QStringLiteral("乱数アルゴリズム")},
     {QStringLiteral("無效設定，請選擇演算法"), QStringLiteral("Invalid setting; select an algorithm"), QStringLiteral("無効な設定です。アルゴリズムを選択してください")},

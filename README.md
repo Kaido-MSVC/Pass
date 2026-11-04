@@ -1,4 +1,4 @@
-# Pass-SSL 安全密碼產生器 v2.2.4
+# Pass-SSL 安全密碼產生器 v2.2.5
 
 作者：Kaido-MSVC　·　Copyright (c) 2026 Kaido-MSVC　·　MIT License
 
@@ -8,12 +8,12 @@
 
 ## 授權
 
-Pass-SSL 本身以 **MIT License** 開源，全文見 `LICENSE.txt`。MIT 只涵蓋本專案撰寫的程式碼與資源；使用的第三方元件各自適用其授權，完整條文在 `LICENSES/`，詳細說明見 `THIRD_PARTY_NOTICES.md`：
+Pass-SSL 本身以 **MIT License** 開源，全文見 `LICENSE.txt`。MIT 只涵蓋本專案撰寫的程式碼與資源；使用的第三方元件各自適用其授權，授權文字與來源指引在 `LICENSES/`，詳細說明見 `THIRD_PARTY_NOTICES.md`：
 
 | 元件 | 用途 | 授權 |
 |---|---|---|
 | Qt 6.12.0 | 介面（動態連結，DLL 未修改、可替換） | LGPLv3 |
-| OpenSSL 4.0.3 | 安全亂數（libcrypto） | Apache License 2.0 |
+| OpenSSL 4.1.0 | 安全亂數（libcrypto） | Apache License 2.0 |
 | zxcvbn-c | 密碼強度估算與字典 | MIT（字典源自 Dropbox zxcvbn，MIT） |
 | EFF Long Wordlist | 隨機單詞密碼詞表 | CC BY 4.0 |
 | Microsoft VC++ Runtime | 執行階段 DLL | Microsoft 再發行條款 |
@@ -45,7 +45,7 @@ Pass-SSL 本身以 **MIT License** 開源，全文見 `LICENSE.txt`。MIT 只涵
 | HMAC-DRBG | SHA-256 | default |
 | HMAC-DRBG | SHA-512 | default |
 
-四個選項皆以 OpenSSL 4.0.3 EVP_RAND API 建立，要求 256-bit DRBG security strength；這不代表輸出密碼必有 256-bit 熵。每個同步產生器持有獨立 SEED-SRC 與所選 DRBG，不共用亂數狀態；每執行緒共用私有 OSSL_LIB_CTX 以快取 provider 演算法。SEED-SRC 取得作業系統熵；不自行用時間或固定值播種。內建 default provider 提供三種 DRBG；不載入外部 openssl.cnf、legacy 或 FIPS provider，亦不宣稱 FIPS 驗證。
+四個選項皆以 OpenSSL 4.1.0 EVP_RAND API 建立，要求 256-bit DRBG security strength；這不代表輸出密碼必有 256-bit 熵。每個同步產生器持有獨立 SEED-SRC 與所選 DRBG，不共用亂數狀態；每執行緒共用私有 OSSL_LIB_CTX 以快取 provider 演算法。SEED-SRC 取得作業系統熵；不自行用時間或固定值播種。內建 default provider 提供三種 DRBG；不載入外部 openssl.cnf、legacy 或 FIPS provider，亦不宣稱 FIPS 驗證。
 
 切換會取消舊工作、清除舊結果與仍屬於本次複製的剪貼簿。下一次工作擷取新的選擇；已卡住的底層呼叫返回前不允許另開工作。選擇立即存至目前使用者的 `PassLocal/Pass-SSL`、`random/algorithm`，重新啟動恢復。未知設定會明確阻擋產生並要求重新選擇。
 
@@ -57,7 +57,7 @@ Pass-SSL 本身以 **MIT License** 開源，全文見 `LICENSE.txt`。MIT 只涵
 
 執行 `build.cmd`。需要已安裝的 Qt 6.12.0 MSVC x64、MSVC 14.44、Windows SDK 10.0.26100.0、CMake、Ninja。C++17、Release、/MD。
 
-CMake 明確使用 `D:/Program Files/OpenSSL-Win64`，精確要求 4.0.3 Crypto；匯入庫鎖定 `lib/VC/x64/MD/libcrypto.lib`，用 dumpbin 驗證 x64 與 libcrypto-4-x64.dll 匯入、Release 動態 CRT 相依性，避免 static、MT 或 Debug 庫。組態後將同來源 DLL 複製到 build。更換 OpenSSL 根目錄必須重新組態。
+CMake 明確使用 `D:/Program Files/OpenSSL-Win64`，精確要求 4.1.0 Crypto；匯入庫鎖定 `lib/VC/x64/MD/libcrypto.lib`，用 dumpbin 驗證 x64 與 libcrypto-4-x64.dll 匯入、Release 動態 CRT 相依性，避免 static、MT 或 Debug 庫。組態後將同來源 DLL 複製到 build。更換 OpenSSL 根目錄必須重新組態。
 
 CTest 包含原有規則、GUI、拒絕取樣、失敗、取消、逾時、清零、詞表與生命週期測試，另有四演算法獨立狀態、失敗不備援、provider/SEED-SRC/DRBG 初始化錯誤、重填錯誤及零化測試。GUI 測試使用暫存設定；畫面檔存至 build。
 
@@ -100,6 +100,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/run-validation.ps1
 API 依據：[OpenSSL EVP_RAND](https://docs.openssl.org/4.0/man3/EVP_RAND/)、[Windows OpenClipboard](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-openclipboard)、[Clipboard sequence](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getclipboardsequencenumber)。
 
 ## 版本紀錄
+
+### v2.2.5 OpenSSL 與授權同步更新
+
+- OpenSSL 從 4.0.3 更新為 4.1.0；應用程式、About、Windows 版本資源與發布封裝統一為 v2.2.5。既有 v2.2.4 發布附件維持原樣。
+- 建置使用 `D:\Program Files\OpenSSL-Win64`，已核對標頭、匯入庫與 DLL，精確要求 4.1.0。
+- OpenSSL 的 Apache 2.0 授權全文與作者清單，和原專案收錄檔案逐位元相同。Pass-SSL MIT 與其他元件授權不變。
+- 版本測試核對編譯標頭與實際 DLL 版本；部署前核對 DLL 4.1.0、DLL 雜湊與授權／作者清單，避免混入舊依賴或聲明。
 
 ### v2.2.4 語言與測試同步修正
 

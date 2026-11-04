@@ -1,3 +1,23 @@
-Distributable Code for Microsoft Visual Studio (Includes Utilities & BuildServer Files)
+Microsoft Visual C++ Runtime redistribution information
 
-For the latest version of this Redist.txt file, please visit https://aka.ms/vs/18/redistribution.
+Copyright (c) Microsoft Corporation. All rights reserved.
+The runtime DLLs are Microsoft software and are not covered by Pass-SSL's MIT license.
+
+Pass-SSL deploys unmodified x64 Release CRT DLLs from the installed licensed
+Visual Studio distribution's VC/Redist/MSVC/<version>/x64/Microsoft.VC*.CRT folder.
+Debug runtime DLLs and developer tools are not distributed.
+
+Microsoft's Visual Studio 2026 distributable list permits distribution of
+the applicable unmodified runtime files with a program, subject to the
+Visual Studio license terms. This file is a source/terms guide, not a copy
+of the complete Microsoft software license or a replacement for those terms.
+
+Official distributable list:
+https://learn.microsoft.com/en-us/visualstudio/releases/2026/redistribution
+https://aka.ms/vs/18/redistribution
+
+License terms for the installed Visual Studio Community 2026 edition:
+https://visualstudio.microsoft.com/license-terms/vs2026-ga-community/
+
+Microsoft Visual Studio license directory:
+https://visualstudio.microsoft.com/license-terms/

@@ -114,7 +114,11 @@ private slots:
   for(int i=0;i<1000;++i){ {pass::Random rng(static_cast<pass::RandomAlgorithm>(i%4));rng.byte();if(i%10==0)rng.reseed();}QCOMPARE(fault::live,0);}
   QCOMPARE(fault::uninstantiated,1000);QVERIFY(fault::zeroOK);QVERIFY(fault::bytesZero);
  }
- void version(){QCOMPARE(QString::fromLatin1(OpenSSL_version(OPENSSL_VERSION)),QStringLiteral("OpenSSL 4.0.3 29 Sep 2026"));}
+ void version(){
+  QCOMPARE(QString::fromLatin1(OPENSSL_VERSION_STR),QStringLiteral("4.1.0"));
+  QCOMPARE(OpenSSL_version_num(),OPENSSL_VERSION_NUMBER);
+  QCOMPARE(QString::fromLatin1(OpenSSL_version(OPENSSL_VERSION)),QString::fromLatin1(OPENSSL_VERSION_TEXT));
+ }
  void realProvider_data(){algorithms();}
  void realProvider(){
   QFETCH(int,algorithm);auto a=static_cast<pass::RandomAlgorithm>(algorithm);
