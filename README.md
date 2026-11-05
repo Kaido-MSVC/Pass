@@ -1,4 +1,4 @@
-# Pass-SSL 安全密碼產生器 v2.2.5
+# Pass-SSL 安全密碼產生器 v2.2.6
 
 作者：Kaido-MSVC　·　Copyright (c) 2026 Kaido-MSVC　·　MIT License
 
@@ -108,6 +108,14 @@ API 依據：[OpenSSL EVP_RAND](https://docs.openssl.org/4.0/man3/EVP_RAND/)、[
 
 ## 版本紀錄
 
+### v2.2.6 安裝器信任邊界修正
+
+- 處理稽核待驗證項目 NV-01：升級不再執行既有目錄的 `Uninstall.exe`，即使目錄可由其他使用者寫入，也不會因此執行舊解除安裝器。
+- 新版直接覆寫本產品檔案，只依內嵌固定清單清除 v2.2.2 已停用的 DLL／外掛；不讀取舊目錄提供的清單，不遞迴刪除，保留額外的使用者檔案。未來移除套件檔案時須更新 `installer/legacy-files.nsh`。
+- 保留預設 Program Files、自訂 `/D=完整路徑`（最後一個參數，不加引號）、捷徑與解除安裝登錄鍵。請將自訂位置設為本產品專用資料夾；建議使用限制一般使用者寫入的目錄。
+- 舊解除安裝器無法移除、套件寫入或新解除安裝器產生失敗時，回報失敗並停止，不登記為新版。關閉程式並排除檔案鎖定後可重新安裝；不提供交易式回復。
+- 版本統一為 v2.2.6；維持 Qt 6.12.0、OpenSSL 4.1.0 與既有其他依賴。
+
 ### v2.2.5 OpenSSL 與授權同步更新
 
 - OpenSSL 從 4.0.3 更新為 4.1.0；應用程式、About、Windows 版本資源與發布封裝統一為 v2.2.5。既有 v2.2.4 發布附件維持原樣。
@@ -133,7 +141,7 @@ API 依據：[OpenSSL EVP_RAND](https://docs.openssl.org/4.0/man3/EVP_RAND/)、[
 - 版本號只在 `CMakeLists.txt` 的 `project(VERSION)` 設定一次，由 CMake 產生 `pass_version.h` 供程式、版本資源、測試使用；`deploy.ps1`、`run-validation.ps1` 與 NSIS 從同一處讀取。
 - `deploy.ps1` 自動尋找已安裝的最新 VC++ x64 CRT（14.44 以上），不再寫死 Redist 版本資料夾；部署後先對可攜版執行 `--smoke-test`，失敗即停止。
 - 可攜版移除純 Widgets 程式用不到的軟體 OpenGL、D3D 編譯器、TLS、網路資訊、觸控與多數影像格式外掛（保留 ico、svg）。
-- 安裝程式：顯示授權頁、桌面捷徑改為可選、升級前先執行舊版解除安裝程式以移除舊檔；不再另外執行 VC++ redist（執行階段 DLL 已隨程式附帶）。
+- 安裝程式：顯示授權頁、桌面捷徑改為可選、當時升級前會先執行舊版解除安裝程式以移除舊檔（v2.2.6 已改用內嵌清單，不再執行舊程式）；不再另外執行 VC++ redist（執行階段 DLL 已隨程式附帶）。
 
 ### v2.2.2 主視窗擷取排除與安全修正
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
-project(PassSSL VERSION 2.2.5 LANGUAGES CXX RC)
+project(PassSSL VERSION 2.2.6 LANGUAGES CXX RC)
 # Single source of truth for version and author; see src/pass_version.h.in.
 set(PASS_AUTHOR "Kaido-MSVC")
 set(PASS_COPYRIGHT_YEAR "2026")
