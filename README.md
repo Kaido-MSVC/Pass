@@ -1,5 +1,16 @@
 # Pass-SSL 安全密碼產生器 v2.2.6
 
+## English overview
+
+**Pass-SSL v2.2.6** is an offline password and passphrase generator for Windows x64, built with C++/Qt and OpenSSL 4.1.0. It provides configurable character passwords (4–128 characters), EFF word-list passphrases (4–12 words), batch generation, password-strength feedback, and four selectable OpenSSL DRBG options: CTR-DRBG (AES-256-CTR), HASH-DRBG (SHA-256), and HMAC-DRBG (SHA-256 or SHA-512).
+
+The interface supports **Traditional Chinese, Japanese, and English**. On first launch, the application follows supported Windows display-language preferences; a manually selected language is saved and takes priority thereafter.
+
+Passwords are generated locally, with no generated-password history stored. While the application is open, its optional 30-second clipboard auto-clear timer can clear copied passwords under the stated conditions; **clipboard content is preserved on exit**, and OS-level clipboard history or other copies cannot be guaranteed to be erased.
+
+Get the installer or portable ZIP from [GitHub Releases](https://github.com/Kaido-MSVC/Pass/releases). Keep the included DLLs, plugins, and license notices together. The application's own code is MIT-licensed, while its dependencies retain their respective licenses. See the Chinese documentation below for the full security, installation, and testing limitations.
+
+
 作者：Kaido-MSVC　·　Copyright (c) 2026 Kaido-MSVC　·　MIT License
 
 ## 專案介紹
